@@ -1,0 +1,1692 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# INTRODUCTION\n",
+    "- Observing forest fire in 2 regions of Algeria, namely the Bejaia region located in the northeast of Algeria and the Sidi Bel-abbes region located in the northwest of algeria.\n",
+    "- The dataset i'm using comes from UCI on Algerian Forest Fires\n",
+    "- The dataset contains record forest fire occurrance in summer 2012 which spans the period from June 2012 to September 2012.\n",
+    "- This project explores the possibility og using machine learning algorithm to predict forest fires in these regions based in certain weather features."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "warnings.filterwarnings(\"ignore\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Importing python libraries"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "ModuleNotFoundError",
+     "evalue": "No module named 'statsmodels.stat'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn[2], line 5\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m \u001b[38;5;21;01mmatplotlib\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mpyplot\u001b[39;00m \u001b[38;5;28;01mas\u001b[39;00m \u001b[38;5;21;01mplt\u001b[39;00m\n\u001b[1;32m      4\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m \u001b[38;5;21;01mseaborn\u001b[39;00m \u001b[38;5;28;01mas\u001b[39;00m \u001b[38;5;21;01msns\u001b[39;00m\n\u001b[0;32m----> 5\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m \u001b[38;5;21;01mstatsmodels\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mstat\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01moutliners_influence\u001b[39;00m \u001b[38;5;28;01mimport\u001b[39;00m variance_inflation_factor\n",
+      "\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'statsmodels.stat'"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "from statsmodels.stat.outliners_influence import variance_inflation_factor"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Loading CSV fire\n",
+    "- Pandas Library: to download the forest dataset\n",
+    "\n",
+    "###### Variable declaration:\n",
+    "- ff_df is forestFire_dataframe"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df = pd.read_csv('Algerian_forest_fires_dataset_UPDATE.csv')\n",
+    "pd.set_option('display.max_columns', None)\n",
+    "pd.set_option('display.max_rows', None)\n",
+    "ff_df"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# EDA\n",
+    "- Exploratory Data Anaylsis (EDA) application to extract insights from the data set by performing Data Analysis using Pandas and Data visualisation using Matplotlib & Seaborn to know which features have contributed more in predicting Forest fire. As it is a good practuice to study and understand the data first and gather as many insight as possible."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "ff_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.tail()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "###### cleaning dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#To check the row which have a missing value\n",
+    "ff_df[ff_df.isnull().any(axis=1)]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Making new column based on the region\n",
+    "- As seen above the missing values at 122th index seperate the data set of the 2 regions.\n",
+    "\n",
+    "1 : Bejaia Region Dataset\n",
+    "\n",
+    "2 : Sidi Bel-Abbes Region Dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.loc[:122, 'Region']=1\n",
+    "ff_df.loc[122:, 'Region']=2\n",
+    "ff_df[['Region']] = ff_df[['Region']].astype(int)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.tail(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df =ff_df.dropna().reset_index(drop=True)\n",
+    "ff_df.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Column that has String\n",
+    "ff_df.iloc[[122]]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df[ff_df.duplicated()]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There are no duplicated data in the data set"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Remove the 122th column\n",
+    "ff_df1 = ff_df.drop(122).reset_index(drop=True)\n",
+    "pd.set_option('display.max_rows', None)\n",
+    "ff_df1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1[ff_df1.isnull().any(axis=1)]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for column names\n",
+    "ff_df1.columns"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Changing the data types into the required data types for the respective features for the analysis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1[['month', 'day', 'year', 'Temperature', 'RH', 'Ws']] = ff_df1[['month', 'day', 'year', 'Temperature','RH', 'Ws']].astype(int)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "obj = [features for features in ff_df1.columns if ff_df1[features].dtypes=='object']\n",
+    "for i in obj:\n",
+    "    if i != 'Classes':\n",
+    "        ff_df1[i] = ff_df1[i].astype(float)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.describe()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.describe(include = 'all')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1[\"Classes\"].value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### The dependent feature [Classses] only contains two categories but due to misspace it outputs multiple category so need to change the spacing in order to make two category."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.Classes = ff_df1.Classes.str.strip()\n",
+    "ff_df1[\"Classes\"].value_counts()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Bejaia Region dataset only\n",
+    "ff_df1[:122]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Sidi Bel-Abbes region dataset only\n",
+    "ff_df1[122:]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.corr()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(20,15))\n",
+    "sns.heatmap(ff_df1.corr(), annot=True, linewidths=1,\n",
+    "            linecolor=\"black\", cbar=True, cmap=\"Paired\",\n",
+    "            xticklabels=\"auto\", yticklabels=\"auto\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Encoding Not fire as 0 and fire as 1\n",
+    "ff_df1['Classes']= np.where(ff_df1['Classes']=='not fire',0,1)\n",
+    "ff_df1.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.Classes.value_counts()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(20,15))\n",
+    "sns.heatmap(ff_df1.corr(), annot=True, linewidths=1,\n",
+    "           linecolor=\"black\", cbar=True, cmap=\"Paired\",\n",
+    "           xticklabels=\"auto\", yticklabels=\"auto\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Distribution visualisation"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df1.hist(bins=50, figsize=(20,15), ec ='b')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Calculating the percentages of each Class categories\n",
+    "percent =ff_df1.Classes.value_counts(normalize=True)*100\n",
+    "percent"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "clabels =[\"Fire\", \"Not Fire\"]\n",
+    "plt.figure(figsize=(12,7))\n",
+    "plt.pie(percent, labels = clabels, autopct='%1.1f%%')\n",
+    "plt.title(\"Classes Pie Chart\", fontsize=12)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sns.countplot(x ='Classes', data=ff_df1, palette=\"tab10\")\n",
+    "plt.title('Class Distributions \\n 0: No Fire || 1: Fire', fontsize =14)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Monthwise Fire Analysis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "temp= ff_df1.loc[ff_df1['Region']== 1]\n",
+    "plt.subplots(figsize=(13,6))\n",
+    "sns.set_style('whitegrid')\n",
+    "sns.countplot(x='month',hue='Classes',data= ff_df1,ec = 'black', palette= 'Set2')\n",
+    "plt.title('Fire Analysis Month wise for Bejaia Region', fontsize=18, weight='bold')\n",
+    "plt.ylabel('Count', weight = 'bold')\n",
+    "plt.xlabel('Months', weight= 'bold')\n",
+    "plt.legend(loc='upper right')\n",
+    "plt.xticks(np.arange(4), ['June','July', 'August', 'September',])\n",
+    "plt.grid(alpha = 0.5,axis = 'y')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "temp= ff_df1.loc[ff_df1['Region']== 2]\n",
+    "plt.subplots(figsize=(13,6))\n",
+    "sns.set_style('whitegrid')\n",
+    "sns.countplot(x='month',hue='Classes',data= ff_df1,ec = 'black', palette= 'Set2')\n",
+    "plt.title('Fire Analysis Month wise for Sidi Bel-Abbes', fontsize=18, weight='bold')\n",
+    "plt.ylabel('Count', weight = 'bold')\n",
+    "plt.xlabel('Months', weight= 'bold')\n",
+    "plt.legend(loc='upper right')\n",
+    "plt.xticks(np.arange(4), ['June','July', 'August', 'September',])\n",
+    "plt.grid(alpha = 0.5,axis = 'y')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Multicollinearity\n",
+    "- Multicollinearity is a statistical concept where independent variables modelled are correlated. If 2 variables are considered perfectly collinear, this suggest their correlation coefficient is +/-1.0.\n",
+    "- Result are less likely to be reliable statistical inferences.\n",
+    "- It can be detected with various techniques\n",
+    "- Reggression analysis has the assumption that independent features should not have multicollinearity. Therefore, the independent variables need to have little correlation as much as possible .\n",
+    "- Variance Inflation Factor(VIF).\n",
+    "    - VIF value greater than 10 ---> Multicollinearity\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x =ff_df1.iloc[:, 0:13]\n",
+    "y =ff_df1['Classes']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "vif_value = pd.Dataframe()\n",
+    "vif_value[\"feature\"] =x.columns\n",
+    "vif_value[\"VIF\"]= [variance_inflation_factor(x.values, i)\n",
+    "                                            for i in range(len(x.columns))]\n",
+    "print(vif_value)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Classification Algorithim:\n",
+    "* Binary classification [(fire, not fire)] by predicting the features [\"Classes\"] from dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Decision Tree"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Random Forest"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### KNeighbors"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### XGboost"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## HyperParameter Tuning"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Forest classifier tuning"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Model Selection\n",
+    "#### Applying stratified Kfold Cross-Validation to know the exact mean CV accuracy score."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Regression Problem algorithm:\n",
+    "* Prediction of the feature [FWI] (Fire Weather Index) which correlates ro Classes Feature by 90%+"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Regression Analysis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ff_df2 =ff_df1.drop(['day','month','year'], axis=1)\n",
+    "ff_df2.head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Spliting dataset into inout and output feature"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x= ff_df2.iloc[:,0:10]\n",
+    "y= ff_df2['FWI']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Spliting the dataset into train and test"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=0.25\n",
+    "                                                    random_state_states=0)\n",
+    "x_train.shape, x_test.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train.columns"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train.corr()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(12,10))\n",
+    "correlate= x_train.corr()\n",
+    "sns.heatmap(correlate, annot=True, cmap=plt.cm.CMRmap_r)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "consider Correlation thresold value as 0.8\n",
+    "Remove from the analysis any correlation for independent features and features with correlation >0.8"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def corrlt(dataset, threshold):\n",
+    "    col_corr =set()\n",
+    "    corr_matrix = dataset.corr()\n",
+    "    for i in range(len(corr_matrix.columns)):\n",
+    "        for j in range(i):\n",
+    "            if abs(corr_matrix.iloc[i, j])>threshold:\n",
+    "                colname=corr_matrix.columns[i]\n",
+    "                col_corr.add(colname)\n",
+    "    return col_corr"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "corrt_features = corrlt(X_train, 0.8)\n",
+    "corrt_features"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "x_train.drop(corrt_features, axis=1, inplace=True)\n",
+    "x_test.drop(corrt_features, axis=1, inplace=True)\n",
+    "x_train.shape, x_test.shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Scaling"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def scaler_standard(x_train, x_test):\n",
+    "    scaler = StandardScaler()\n",
+    "    x_train_scale = scaler.fit_transform(x_train)\n",
+    "    x_test_scale = scaler.transform(x_test)\n",
+    "    \n",
+    "    return x_train_scale, x_test_scale"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train_scaled, x_test_scaled = scaler_standard(x_train, x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.subplots(figsize=(15, 5))\n",
+    "plt.subplot(1, 2, 1)\n",
+    "sns.boxplot(data=X_train)\n",
+    "plt.title('X_train Before Scaling')\n",
+    "plt.subplot(1, 2, 2)\n",
+    "sns.boxplot(data=X_train_scale)\n",
+    "plt.title('X_train After Scaling')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Model building for regression analyis"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Linear Regression"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lRegression = LinearRegression()\n",
+    "lRegression.fit(x_train_scaled, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print('Intercept: ', lRegresion.intercept_)\n",
+    "print('Coefficient: ', lRegression.coef_)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Train Score: \",lRegression.score(X_train_scale, y_train))\n",
+    "print(\"Test Score: \",lRegression.score(X_test_scale,y_test))    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lRegression_predict = lRegression.predict(X_test_scale)\n",
+    "lRegression_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "actual_predict = pd.DataFrame({'Actual Revenue: ':y_test, 'Predicted Revenue: ':lRegression_predict})    \n",
+    "actual_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, lRegression_predict)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, lRegression_predict)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, lRegression_predict))\n",
+    "\n",
+    "print('Mean Absolute Error: ', meanAbErr)\n",
+    "print('Mean Square Error: ', meanSqErr)\n",
+    "print('Root Mean Square Error: ', rootMeanSqErr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#coefficient of determination\n",
+    "reg2 =reg2_score(y_test, lRegression_predict)\n",
+    "print(\"R-square: \", reg2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Lasso Regression"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.linear_model import Lasso\n",
+    "Lass_Reg = Lasso()\n",
+    "Lass_Reg.fit(x_train_scale, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Intercept: \", Lass_reg.intercept_)\n",
+    "print(\"Coefficient: \", Lass_reg.coef_)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Training Score:\",Lass_Reg.score(X_train_scale, y_train))\n",
+    "print(\"Test Score:\",Lass_Reg.score(X_test_scale,y_test))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "LassReg_prediction = LassReg.predict(X_test_scale)\n",
+    "LassReg_prediction"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Actual_predicted = pd.DataFrame({'Actual Revenue: ': y_test, 'Predicted Revenue': LassReg_prediction})    \n",
+    "Actual_predicted"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, LassReg_prediction)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, LassReg_prediction)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, LassReg_prediction))\n",
+    "\n",
+    "print('Mean Absolute Error:', meanAbErr)\n",
+    "print('Mean Square Error:', meanSqErr)\n",
+    "print('Root Mean Square Error:', rootMeanSqErr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg2= reg2_score(y_test, LassReg_prediction)\n",
+    "print(\"R-Square: \", reg2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Ridge Regression"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.linear_model import Ridge\n",
+    "\n",
+    "RReg = Ridge()\n",
+    "RReg.fit(X_train_scaled, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print('Intercept: ',RReg.intercept_)\n",
+    "print('Coefficient: ',RReg.coef_)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Training Score: \",RReg.score(X_train_scaled, y_train))\n",
+    "print(\"Test Score: \",RReg.score(X_test_scaled,y_test))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "RReg_Predict = Ridge_Regression.predict(X_test_scaled)\n",
+    "RReg_Predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Actual_predict = pd.DataFrame({'Actual Revenue ': y_test, 'Predicted Revenue': RReg_Predict})    \n",
+    "Actual_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, RReg_Predict)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, RReg_Predict)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, RReg_Predict))\n",
+    "\n",
+    "print('Mean Absolute Error: ', meanAbErr)\n",
+    "print('Mean Square Error: ', meanSqErr)\n",
+    "print('Root Mean Square Error: ', rootMeanSqErr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg2 =  reg2_score(y_test, RReg_Predict)\n",
+    "print(\"R-Square: \",reg2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Vector Regressor Support"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "from sklearn.svm import SVR\n",
+    "\n",
+    "SVector_Reg = SVR()\n",
+    "SVector_Reg.fit(X_train_scale, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print('Intercept: ',SVector_Reg.intercept_)\n",
+    "print('Coefficient: ',SVector_Reg.coef_)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Training Score: \",SVector_Reg.score(x_train_scale, y_train))\n",
+    "print(\"Test Score: \",SVector_Reg.score(x_test_scaled,y_test))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Actual_predict = pd.DataFrame({'Actual Revenue ': y_test, 'Predicted Revenue': SVector_Reg_Predict})    \n",
+    "Actual_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "SVector_Reg_Predict = SVector_Reg.predict(x_test_scale)\n",
+    "SVector_Reg_Predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, SVector_Reg_Predict)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, SVector_Reg_Predict)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, SVector_Reg_Predict))\n",
+    "\n",
+    "print('Mean Absolute Error: ', meanAbErr)\n",
+    "print('Mean Square Error: ', meanSqErr)\n",
+    "print('Root Mean Square Error: ', rootMeanSqErr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg2 =  reg2_score(y_test, SVector_Reg_Predict)\n",
+    "print(\"R-Square: \",reg2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Forest Regressor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "from sklearn.svm import RandomForestRegressor\n",
+    "\n",
+    "forestReg = RandomForestRegressor()\n",
+    "forestReg.fit(X_train_scale, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "foresReg_Predict = forestReg.predict(x_test_scale)\n",
+    "forestReg_Predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Actual_predict = pd.DataFrame({'Actual Revenue ': y_test, 'Predicted Revenue': forestReg_Predict})    \n",
+    "Actual_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, forestReg_Predict)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, forestReg_Predict)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, forestReg_Predict))\n",
+    "\n",
+    "print('Mean Absolute Error: ', meanAbErr)\n",
+    "print('Mean Square Error: ', meanSqErr)\n",
+    "print('Root Mean Square Error: ', rootMeanSqErr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg2 =  reg2_score(y_test, forestReg_Predict)\n",
+    "print(\"R-Square: \",reg2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "from sklearn.svm import KNeighborsRegressor\n",
+    "\n",
+    "KNeighbors_Reg = KNeighborsRegressor()\n",
+    "KNeighbors_Reg.fit(x_train_scale, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "KNeighbors_Reg_Predict = KNeighbors_Reg.predict(x_test_scale)\n",
+    "KNeighbors_Reg_Predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Actual_predict = pd.DataFrame({'Actual Revenue ': y_test, 'Predicted Revenue': KNeighbors_Reg_Predict})    \n",
+    "Actual_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, KNeighbors_Reg_Predict)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, KNeighbors_Reg_Predict)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, KNeighbors_Reg_Predict))\n",
+    "\n",
+    "print('Mean Absolute Error: ', meanAbErr)\n",
+    "print('Mean Square Error: ', meanSqErr)\n",
+    "print('Root Mean Square Error: ', rootMeanSqErr)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg2 =  reg2_score(y_test, KNeighbors_Reg_Predict)\n",
+    "print(\"R-Square: \",reg2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Results Summary"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Hyperparameter Tuning\n",
+    "#### Tuning Random Forest Regressor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "param_grid =[{'bootstrap': [True, False],\n",
+    "'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110,120],\n",
+    "'max_features': ['auto', 'sqrt'],\n",
+    "'min_samples_leaf': [1, 3, 4],\n",
+    "'min_samples_split': [2, 6, 10],\n",
+    "'n_estimators': [5, 20, 50, 100]}]\n",
+    "\n",
+    "forestReg =RandomForestRegressor()\n",
+    "Random_ref = RandomizedSearchCV(forestReg,param_grid, cv = 10, verbose=2,n_jobs = -1)\n",
+    "Random_ref.fit(X_train_scale, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "random_grid=Random_ref.best_estimator_\n",
+    "\n",
+    "bestref_pred = random_grid.predict(X_test_scale)\n",
+    "bestref_pred"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Actual_predict =pd.DataFrame({'Actual Revenue': y_test, 'Predicted Revenue': bestref_pred})    \n",
+    "Actual_predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, bestref_pred)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, bestref_pred)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, bestref_pred))\n",
+    "\n",
+    "reg2 =  reg2_score(y_test, KNeighbors_Reg_prediction)\n",
+    "\n",
+    "\n",
+    "print('Mean Absolute Error:', meanAbErr)\n",
+    "print('Mean Square Error:', meanSqErr)\n",
+    "print('Root Mean Square Error:', rootMeanSqErr)\n",
+    "print(\"R-Square:\",r2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Selecting Features\n",
+    "- Only selecting 5 important features to make the prediction\n",
+    "    - #### ISI, FFMC, DMC, RH, and Ws as seen in the output below.\n",
+    "- To build an interactive and user friendly model other features will be dropped."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "important_features = Random_ref.best_estimator_.important_features_\n",
+    "important_df = pd.DataFrame({\n",
+    "    'feature': X_train.columns,\n",
+    "    'importance': important_features\n",
+    "}).sort_values('importance', ascending=False)\n",
+    "important_df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(12,6))\n",
+    "sns.set_style('ticks')\n",
+    "ax = sns.barplot(data=important_df, x='importance', y='feature',ec = 'black')\n",
+    "ax.set_title('Top 7 Important Features', weight='bold',fontsize = 15)\n",
+    "ax.set_xlabel('Feature Importance %',weight='bold')\n",
+    "ax.set_ylabel('Features',weight='bold')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Deployment Model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train_new = x_train.drop(['Rain', 'RH'], axis=1)\n",
+    "x_test_new = x_test.drop(['Rain', 'RH'], axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train_new.columns"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_test_new.columns"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train_new_scale, x_test_new_scale = scaler_standard(x_train_new, x_test_new)\n",
+    "     "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "random_grid.fit(X_train_new_scale, y_train)\n",
+    "bestref_pred = random_grid.predict(X_test_new_scale)\n",
+    "bestref_pred"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "meanAbErr = metrics.mean_absolute_error(y_test, bestref_pred)\n",
+    "meanSqErr = metrics.mean_squared_error(y_test, bestref_pred)\n",
+    "rootMeanSqErr = np.sqrt(metrics.mean_squared_error(y_test, bestref_pred))\n",
+    "\n",
+    "reg2 =  reg2_score(y_test, KNeighbors_Reg_pred)\n",
+    "\n",
+    "\n",
+    "print('Mean Absolute Error:', meanAbErr)\n",
+    "print('Mean Square Error:', meanSqErr)\n",
+    "print('Root Mean Square Error:', rootMeanSqErr)\n",
+    "print(\"R-Square:\",reg2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import bz2,pickle\n",
+    "file = bz2.BZ2File('/content/drive/MyDrive/Projects/Algerian Forest Fire Prediction/Regression.pkl','wb')\n",
+    "pickle.dump(best_random_grid,file)\n",
+    "file.close()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
